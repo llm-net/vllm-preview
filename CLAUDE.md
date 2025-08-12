@@ -7,9 +7,17 @@
 
 每次根据需求，我将执行以下步骤：
 
-### 1. 拉取最新代码
+### 1. 同步上游代码
+从原始 vllm-project/vllm 仓库合并最新代码：
 ```bash
-git pull origin main
+# 添加上游仓库（如果尚未添加）
+git remote add upstream https://github.com/vllm-project/vllm.git
+
+# 获取上游最新代码
+git fetch upstream
+
+# 合并上游主分支到本地
+git merge upstream/main
 ```
 确保本地代码与上游仓库保持同步
 
