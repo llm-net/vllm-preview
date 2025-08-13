@@ -1,0 +1,53 @@
+# GLM-4.5V vLLM Docker image
+# Based on CUDA 12.8 runtime with pip installation
+
+FROM nvidia/cuda:12.8.1-runtime-ubuntu22.04
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+ENV VLLM_USAGE_SOURCE=production-docker-image
+ENV VLLM_WORKER_MULTIPROC_METHOD=fork
+
+# Install Python and system dependencies
+RUN apt-get update && apt-get install -y \
+    python3.10 \
+    python3-pip \
+    git \
+    curl \
+    wget \
+    gcc \
+    g++ \
+    libgomp1 \
+    libnuma-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Upgrade pip
+RUN python3 -m pip install --upgrade pip setuptools wheel
+
+# Install vLLM from nightly wheels
+RUN pip install -U vllm --pre --extra-index-url https://wheels.vllm.ai/nightly
+
+# Install GLM-4.5V special transformers version
+# First uninstall the default transformers from vLLM, then install GLM-4.5V version
+RUN pip uninstall -y transformers && \
+    pip install transformers-v4.55.0-GLM-4.5V-preview
+
+# Install additional dependencies for OpenAI API server
+RUN pip install \
+    fastapi \
+    uvicorn[standard] \
+    openai \
+    pydantic \
+    prometheus-client \
+    tiktoken
+
+# Create working directory
+WORKDIR /workspace
+
+# Verify installation
+RUN python3 -c "import vllm; print(f'vLLM version: {vllm.__version__}')" && \
+    python3 -c "import torch; print(f'PyTorch version: {torch.__version__}')" && \
+    python3 -c "import transformers; print(f'Transformers version: {transformers.__version__}')"
+
+# Default entrypoint for OpenAI compatible server
+ENTRYPOINT ["python3", "-m", "vllm.entrypoints.openai.api_server"]
