@@ -5,12 +5,16 @@
 set -e
 set -x
 
+merge_base_commit=$(git merge-base HEAD origin/main)
+echo "Current merge base commit with main: $merge_base_commit"
+git show --oneline -s $merge_base_commit
+
 cd /vllm-workspace/
 
 # uninstall vllm
 pip3 uninstall -y vllm
 # restore the original files
-mv test_docs/vllm ./vllm
+mv src/vllm ./vllm
 
 # remove all compilers
 apt remove --purge build-essential -y
@@ -18,7 +22,7 @@ apt autoremove -y
 
 echo 'import os; os.system("touch /tmp/changed.file")' >> vllm/__init__.py
 
-VLLM_TEST_USE_PRECOMPILED_NIGHTLY_WHEEL=1 VLLM_USE_PRECOMPILED=1 pip3 install -vvv -e .
+VLLM_PRECOMPILED_WHEEL_COMMIT=$merge_base_commit VLLM_USE_PRECOMPILED=1 pip3 install -vvv -e .
 
 # Run the script
 python3 -c 'import vllm'
